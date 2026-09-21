@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TB_ReaderRecords 相关查询整理</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+        background: #f5f6f8;
+        color: #333;
+        padding: 24px;
+        line-height: 1.6;
+    }
+    .container {
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+    h1 {
+        font-size: 22px;
+        color: #2f5f77;
+        margin-bottom: 20px;
+        padding-left: 12px;
+        border-left: 5px solid #457e98;
+    }
+    .card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+    .card-header {
+        background: linear-gradient(135deg, #457e98, #2f5f77);
+        color: #fff;
+        padding: 14px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .card-header h2 {
+        font-size: 16px;
+        font-weight: 600;
+    }
+    .card-header .desc {
+        font-size: 12px;
+        opacity: 0.9;
+        margin-top: 2px;
+    }
+    .card-body {
+        padding: 16px 20px 20px;
+    }
+    .btn-copy {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.5);
+        color: #fff;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-copy:hover {
+        background: rgba(255,255,255,0.35);
+    }
+    pre {
+        background: #1e2a36;
+        color: #e2e8f0;
+        padding: 16px;
+        border-radius: 8px;
+        overflow: auto;
+        font-family: Consolas, Monaco, "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.7;
+        white-space: pre;
+        tab-size: 4;
+    }
+    .note {
+        background: #fef9e7;
+        border-left: 4px solid #f1c40f;
+        padding: 10px 14px;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #7d6608;
+        margin-bottom: 12px;
+    }
+    footer {
+        text-align: center;
+        font-size: 12px;
+        color: #aaa;
+        padding: 20px 0 10px;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>TB_ReaderRecords 相关查询整理</h1>
+
+    <!-- 查询 1 -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2>1. 查询未离开的刷卡记录（可改为更新离开时间）</h2>
+                <div class="desc">筛选设备类别为 2、离开时间为空、读取时间早于指定日期的记录</div>
+            </div>
+            <button class="btn-copy" onclick="copySQL('sql1')">复制 SQL</button>
+        </div>
+        <div class="card-body">
+            <pre id="sql1">select *--update t set F_LeaveTime=getdate()
+from TB_ReaderRecords t 
+where F_DeviceCategory = 2 
+  and F_LeaveTime is null 
+  and F_ReadTime &lt; '2026-09-21' 
+order by F_ReadTime desc</pre>
+        </div>
+    </div>
+
+    <!-- 查询 2 -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2>2. 设备 / 安全事件 / 阅读器 状态关联查询</h2>
+                <div class="desc">查看设备的基本信息、阅读器信息、最新刷卡记录时间</div>
+            </div>
+            <button class="btn-copy" onclick="copySQL('sql2')">复制 SQL</button>
+        </div>
+        <div class="card-body">
+            <pre id="sql2">--设备/安全事件/阅读器 状态关联查询
+SELECT 
+    d.F_DeviceCode,
+    d.F_DeviceName,
+    d.F_RFIDReaderId,
+    r.F_RFIDName,
+    r.F_RFIDReader,
+    CASE d.F_EnabledMark
+        WHEN 0 THEN '禁用'
+        WHEN 1 THEN '启用'
+        ELSE '未知' 
+    END AS [启用状态],
+    CASE d.F_UseState
+        WHEN 0 THEN '未使用'
+        WHEN 1 THEN '使用中'
+        WHEN 2 THEN '安全'
+        WHEN 3 THEN '異常'
+        ELSE '未知' 
+    END AS [使用状态],
+    r.F_LastCheckStateTime AS [阅读器最后数据同步时间],
+    rec.LatestReadTime AS [最新记录时间(F_ReadTime)]
+FROM TB_Device d
+LEFT JOIN TB_RFIDReader r 
+    ON d.F_RFIDReaderId = r.F_RFIDReaderId
+LEFT JOIN (
+    SELECT 
+        F_DeviceId, 
+        MAX(F_ReadTime) AS LatestReadTime
+    FROM TB_ReaderRecords
+    GROUP BY F_DeviceId
+) rec 
+    ON d.F_DeviceId = rec.F_DeviceId
+WHERE d.F_DeviceCategory = 2 AND d.F_DeleteMark = 0
+ORDER BY rec.LatestReadTime DESC;</pre>
+        </div>
+    </div>
+
+    <!-- 查询 3 -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2>3. 阅读器“在线 / 离线”及是否上传记录查询</h2>
+                <div class="desc">统计每个阅读器的在线状态、关联设备、历史上传记录总数及最后上传时间</div>
+            </div>
+            <button class="btn-copy" onclick="copySQL('sql3')">复制 SQL</button>
+        </div>
+        <div class="card-body">
+            <pre id="sql3">--阅读器“在线”“离线” 是否上传记录查询
+SELECT 
+    r.F_RFIDName AS [阅读器名称],
+    r.F_RFIDReader AS [阅读器编号],
+    CASE r.F_OnLineState 
+        WHEN 1 THEN '在线' 
+        WHEN 0 THEN '离线' 
+        ELSE '未知' 
+    END AS [当前状态],
+    d.F_DeviceCode,
+    d.F_DeviceName,
+    CASE 
+        WHEN MAX(t.F_ReadTime) IS NULL THEN '从未上传' 
+        ELSE '已上传' 
+    END AS [是否上传记录],
+    COUNT(t.F_ReaderId) AS [历史上传记录总数], 
+    MAX(t.F_ReadTime) AS [最后一次上传时间]
+FROM TB_RFIDReader r
+LEFT JOIN TB_Device d 
+    ON r.F_RFIDReaderId = d.F_RFIDReaderId 
+    AND d.F_DeleteMark = 0
+LEFT JOIN TB_ReaderRecords t 
+    ON d.F_DeviceId = t.F_DeviceId 
+WHERE r.F_DeleteMark = 0
+GROUP BY 
+    r.F_RFIDReaderId,
+    r.F_RFIDName,
+    r.F_RFIDReader,
+    r.F_OnLineState,
+    d.F_DeviceCode,
+    d.F_DeviceName
+ORDER BY 
+    r.F_OnLineState DESC,
+    [最后一次上传时间] DESC;</pre>
+        </div>
+    </div>
+
+    <footer>
+        TB_ReaderRecords 查询整理 · 可直接复制到 SSMS 执行
+    </footer>
+</div>
+
+<script>
+    function copySQL(id) {
+        var text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text).then(function () {
+            alert('SQL 已复制到剪贴板！');
+        }).catch(function () {
+            // 降级
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            alert('SQL 已复制到剪贴板！');
+        });
+    }
+</script>
+</body>
+</html>

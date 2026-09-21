@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语言文件缺失编号对比 - zh-HK.js / en-US.js</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+        background: #f5f6f8;
+        color: #333;
+        padding: 24px;
+        line-height: 1.6;
+    }
+    .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    header {
+        background: linear-gradient(135deg, #457e98, #2f5f77);
+        color: #fff;
+        padding: 24px 32px;
+    }
+    header h1 { font-size: 22px; margin-bottom: 6px; }
+    header p { font-size: 14px; opacity: 0.9; }
+
+    .section {
+        padding: 24px 32px;
+        border-bottom: 1px solid #eef0f3;
+    }
+    .section:last-child { border-bottom: none; }
+    .section h2 {
+        font-size: 17px;
+        color: #2f5f77;
+        margin-bottom: 14px;
+        padding-left: 10px;
+        border-left: 4px solid #457e98;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+        font-size: 14px;
+    }
+    th, td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid #eef0f3;
+    }
+    th {
+        background: #f8fafb;
+        color: #555;
+        font-weight: 600;
+    }
+    tr:hover td { background: #fafcfd; }
+    td.code { font-family: Consolas, Monaco, monospace; color: #c0392b; font-weight: 600; }
+    td.count { color: #e67e22; font-weight: 600; }
+
+    .badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .badge-red { background: #fdecea; color: #c0392b; }
+    .badge-orange { background: #fef5e7; color: #e67e22; }
+    .badge-green { background: #eafaf1; color: #27ae60; }
+    .badge-blue { background: #eaf2f8; color: #2980b9; }
+
+    .file-links {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .file-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: #457e98;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    .file-link:hover { background: #356078; }
+    .file-link.src { background: #7f8c8d; }
+    .file-link.src:hover { background: #616a6b; }
+
+    .summary {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+    .summary-card {
+        flex: 1;
+        min-width: 140px;
+        background: #f8fafb;
+        border-radius: 8px;
+        padding: 14px 16px;
+        border-left: 4px solid #457e98;
+    }
+    .summary-card .num {
+        font-size: 24px;
+        font-weight: 700;
+        color: #2f5f77;
+    }
+    .summary-card .label {
+        font-size: 12px;
+        color: #777;
+        margin-top: 2px;
+    }
+
+    .note {
+        background: #fef9e7;
+        border-left: 4px solid #f1c40f;
+        padding: 12px 16px;
+        border-radius: 4px;
+        font-size: 13.5px;
+        color: #7d6608;
+        margin-top: 12px;
+    }
+
+    code {
+        background: #f4f6f8;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: Consolas, Monaco, monospace;
+        font-size: 13px;
+        color: #c0392b;
+    }
+
+    footer {
+        text-align: center;
+        padding: 16px;
+        font-size: 12px;
+        color: #aaa;
+        background: #fafbfc;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <h1>语言文件缺失编号对比</h1>
+        <p>对比 <code style="background:rgba(255,255,255,0.15);color:#fff;">zh-HK.js</code> 与 <code style="background:rgba(255,255,255,0.15);color:#fff;">en-US.js</code> 的编号缺口，生成 SQL 补全参考</p>
+    </header>
+
+    <!-- 源文件链接 -->
+    <div class="section">
+        <h2>源文件</h2>
+        <div class="file-links">
+            <a class="file-link" href="zh-HK.js" target="_blank">📄 查看 zh-HK.js</a>
+            <a class="file-link" href="en-US.js" target="_blank">📄 查看 en-US.js</a>
+            <a class="file-link src" href="zh-HK.js" download>⬇ 下载 zh-HK.js</a>
+            <a class="file-link src" href="en-US.js" download>⬇ 下载 en-US.js</a>
+        </div>
+        <div class="note">
+            提示：确保本 HTML 与 <code>zh-HK.js</code>、<code>en-US.js</code> 放在同一目录下，链接才可正常打开。
+        </div>
+    </div>
+
+    <!-- 总览 -->
+    <div class="section">
+        <h2>缺失总览</h2>
+        <div class="summary">
+            <div class="summary-card">
+                <div class="num">160</div>
+                <div class="label">总缺失编号数</div>
+            </div>
+            <div class="summary-card">
+                <div class="num">5</div>
+                <div class="label">缺失区段数</div>
+            </div>
+            <div class="summary-card">
+                <div class="num">100</div>
+                <div class="label">最大区段 (2560~2659)</div>
+            </div>
+            <div class="summary-card">
+                <div class="num">2</div>
+                <div class="label">涉及语言文件</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 缺失明细 -->
+    <div class="section">
+        <h2>缺失编号明细</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:50px;">#</th>
+                    <th>缺失范围</th>
+                    <th style="width:100px;">数量</th>
+                    <th>说明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td class="code">2279</td>
+                    <td class="count">1 个</td>
+                    <td>零散缺失</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td class="code">2356、2357</td>
+                    <td class="count">2 个</td>
+                    <td>零散缺失</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td class="code">2560 ~ 2659</td>
+                    <td class="count">100 个</td>
+                    <td><span class="badge badge-red">最大连续缺口</span></td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td class="code">2736 ~ 2789</td>
+                    <td class="count">54 个</td>
+                    <td><span class="badge badge-orange">第二大缺口</span></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td class="code">2862、2863</td>
+                    <td class="count">2 个</td>
+                    <td>零散缺失</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 已补全参考 SQL -->
+    <div class="section">
+        <h2>已确认补全的编号 (2258 ~ 2404)</h2>
+        <p style="font-size:13.5px;color:#666;margin-bottom:12px;">
+            以下编号在 <code>zh-HK.js</code> / <code>en-US.js</code> 中已存在，无需补全。列表用于对照。
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Chinese (zh-HK)</th>
+                    <th>English (en-US)</th>
+                    <th style="width:80px;">状态</th>
+                </tr>
+            </thead>
+            <tbody id="langTableBody">
+                <!-- 由 JS 动态填充 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SQL 生成 -->
+    <div class="section">
+        <h2>SQL 补全参考</h2>
+        <p style="font-size:13.5px;color:#666;margin-bottom:10px;">
+            以下 SQL 用于将缺失的编号插入 <code>TransLanguage</code> 表（注意：<code>Code</code> 为标识列时需开启 <code>IDENTITY_INSERT</code>）。
+        </p>
+        <pre id="sqlPreview" style="background:#2d3748;color:#e2e8f0;padding:16px;border-radius:8px;overflow:auto;font-size:13px;line-height:1.7;max-height:400px;"></pre>
+        <div class="file-links" style="margin-top:12px;">
+            <a class="file-link" href="javascript:void(0)" onclick="copySQL()">📋 复制 SQL</a>
+        </div>
+    </div>
+
+    <footer>
+        语言文件对比工具 · 自动生成
+    </footer>
+</div>
+
+<script>
+    // ============ 语言数据（仅展示缺失补全部分） ============
+    const langData = [
+        { code: 2258, zh: '由', en: 'from' },
+        { code: 2259, zh: '統計', en: 'Statistics' },
+        { code: 2260, zh: '違規類別', en: 'Violation category' },
+        { code: 2261, zh: '上周顏色', en: 'Last week color' },
+        { code: 2262, zh: '本周顏色', en: 'This week color' },
+        { code: 2263, zh: '標準顏色', en: 'Standard color' },
+        { code: 2264, zh: '廢料種類', en: 'Waste type' },
+        { code: 2265, zh: '顏色', en: 'Color' },
+        { code: 2266, zh: '本月最安全分判商', en: 'Safest subcontractor this month' },
+        { code: 2267, zh: '上週', en: 'Last week' },
+        { code: 2268, zh: '本週', en: 'This week' },
+        { code: 2269, zh: '分判商違規分析', en: 'Analysis of violations by subcontractors' },
+        { code: 2270, zh: '環境數據統計', en: 'Environmental data statistics' },
+        { code: 2271, zh: '風扇', en: 'Fans' },
+        { code: 2272, zh: '濕水器', en: 'Sprnklers' },
+        { code: 2273, zh: '今日總車數', en: 'Total number of cars today' },
+        { code: 2274, zh: '強制啟動', en: 'Force Start' },
+        { code: 2275, zh: '強制關閉', en: 'Forced shutdow' },
+        { code: 2276, zh: '自動', en: 'Auto' },
+        { code: 2277, zh: '違規{0}次', en: '{0} violations' },
+        { code: 2280, zh: '佔', en: 'occupy' },
+        { code: 2281, zh: '平均每人違規{0}次', en: '{0} violations per person on average' },
+        { code: 2282, zh: '本月上班{0}人', en: '{0} person on duty this month' },
+        { code: 2283, zh: '上月第{0}', en: '{0} of last month' },
+        { code: 2284, zh: '入賬票餘數', en: 'CHIT Remainder' },
+        { code: 2285, zh: '違規類別本週色', en: 'Violation category this week color' },
+        { code: 2286, zh: '違規類別上週色', en: 'Violation category last week color' },
+        { code: 2287, zh: '判頭本週色', en: 'Contractor This Week Color' },
+        { code: 2288, zh: '判頭上週色', en: 'ContractoLast Week Color' },
+        { code: 2289, zh: '開工人數英文單位', en: 'Number of construction workers English unit' },
+        { code: 2290, zh: '違規類別英文單位', en: 'Violation category English unit' },
+        { code: 2291, zh: '分判商違規英文單位', en: 'English units violating the regulations of subcontractors' },
+        { code: 2292, zh: '空氣歷史數據英文單位', en: 'English unit of historical air data' },
+        { code: 2293, zh: '噪音歷史數據英文單位', en: 'English unit of historical noise data' },
+        { code: 2294, zh: '廢物控制圓形圖英文單位', en: 'English unit of waste control circular chart' },
+        { code: 2295, zh: '廢物控制棒形圖英文單位', en: 'English unit of waste control rod chart' },
+        { code: 2296, zh: '是否啟用GPIO', en: 'Whether to enable GPIO' },
+        { code: 2297, zh: 'GPIO IP地址', en: 'GPIO IP address' },
+        { code: 2298, zh: 'GPIO接口', en: 'GPIO Interface' },
+        { code: 2299, zh: 'GPIO亮燈時長', en: 'GPIO light duratio' },
+        { code: 2300, zh: '通信成功', en: 'Communication success' },
+        { code: 2301, zh: '通信失敗', en: 'Communication failure' },
+        { code: 2302, zh: '通信異常', en: 'Communication abnormal' },
+        { code: 2303, zh: '請填寫GPIO IP地址', en: 'Please fill in GPIO IP address abnormal' },
+        { code: 2344, zh: '是否開啟安全帽配對重置功能', en: 'Whether to enable the helmet pairing reset functio' },
+        { code: 2346, zh: '最後7天', en: 'Last 7 days' },
+        { code: 2347, zh: '最後30天', en: 'Last 30 days' },
+        { code: 2404, zh: '查看/編輯', en: 'View/Edit' }
+    ];
+
+    // ============ 填充表格 ============
+    const tbody = document.getElementById('langTableBody');
+    tbody.innerHTML = langData.map(item => `
+        <tr>
+            <td class="code">${item.code}</td>
+            <td>${item.zh}</td>
+            <td>${item.en}</td>
+            <td><span class="badge badge-green">✓ 已补全</span></td>
+        </tr>
+    `).join('');
+
+    // ============ 生成 SQL（使用 select ... union 格式） ============
+    const sqlLines = langData.map((item, index) => {
+        const union = index === langData.length - 1 ? '' : ' union';
+        return `select ${item.code}, '${item.zh.replace(/'/g, "''")}', '${item.en.replace(/'/g, "''")}'${union}`;
+    });
+    const sql = `-- 1. 开启 IDENTITY_INSERT
+SET IDENTITY_INSERT TransLanguage ON;
+
+-- 2. 执行插入（共 ${langData.length} 条）
+INSERT INTO TransLanguage (Code, Chinese, English)
+${sqlLines.join('\n')};
+
+-- 3. 关闭 IDENTITY_INSERT
+SET IDENTITY_INSERT TransLanguage OFF;`;
+
+    document.getElementById('sqlPreview').textContent = sql;
+
+    // ============ 复制 SQL ============
+    function copySQL() {
+        navigator.clipboard.writeText(sql).then(() => {
+            alert('SQL 已复制到剪贴板！');
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = sql;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            alert('SQL 已复制到剪贴板！');
+        });
+    }
+</script>
+
+</body>
+</html>
