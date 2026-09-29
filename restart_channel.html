@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>推流機通道開關</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --error: #dc2626;
+      --error-hover: #b91c1c;
+      --ok: #059669;
+      --ok-hover: #047857;
+      --border: #e5e7eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --card: #111827;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --primary: #3b82f6;
+        --primary-hover: #60a5fa;
+        --error: #f87171;
+        --error-hover: #fb7185;
+        --ok: #34d399;
+        --ok-hover: #6ee7b7;
+        --border: #374151;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans TC", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(520px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 10px 20px rgb(0 0 0 / 8%);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+    }
+    .hint {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    label {
+      display: block;
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 10px;
+      font-size: 16px;
+      background: transparent;
+      color: var(--text);
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 15px;
+      cursor: pointer;
+      color: #fff;
+      background: var(--primary);
+    }
+    button:hover { background: var(--primary-hover); }
+    button.ok { background: var(--ok); }
+    button.ok:hover { background: var(--ok-hover); }
+    button.danger { background: var(--error); }
+    button.danger:hover { background: var(--error-hover); }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .status {
+      margin-top: 14px;
+      min-height: 20px;
+      font-size: 14px;
+      color: var(--muted);
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    .status.error { color: var(--error); }
+    .status.ok { color: var(--ok); }
+    .parse-tip {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      min-height: 16px;
+    }
+    .parse-tip.error { color: var(--error); }
+    .parse-tip.ok { color: var(--ok); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>通道開關</h1>
+    <p class="hint">
+      控制推流機 UI 上的通道開關（拉流）。「重啟通道」會先關閉，等待 5 秒後再打開。
+    </p>
+
+    <!-- ✅ 新增：推流地址输入框 -->
+    <label for="streamUrl">推流地址（自動解析通道號）</label>
+    <input id="streamUrl" type="text"
+           placeholder="https://pentaocean.4s-system.com:18446/hdl/hlsram/live4.flv" />
+    <div id="parseTip" class="parse-tip"></div>
+
+    <label for="host" style="margin-top:10px;">推流機 IP / 網址</label>
+    <input id="host" type="text" value="192.168.1.112" />
+
+    <label for="channel" style="margin-top:10px;">通道號</label>
+    <input id="channel" type="number" min="0" step="1" value="0" />
+
+    <div class="row">
+      <button id="openBtn" class="ok" type="button">打開</button>
+      <button id="closeBtn" class="danger" type="button">關閉</button>
+      <button id="restartBtn" type="button">重啟通道</button>
+    </div>
+    <div id="status" class="status"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/js/md5.min.js"></script>
+  <script>
+    const SECRET = "f6fdffe48c908deb0f4c3bd36c032e72";
+    const RESTART_WAIT_MS = 5000;
+
+    const streamUrlInput = document.getElementById("streamUrl"); // ✅ 新增
+    const parseTipEl = document.getElementById("parseTip");       // ✅ 新增
+    const hostInput = document.getElementById("host");
+    const channelInput = document.getElementById("channel");
+    const openBtn = document.getElementById("openBtn");
+    const closeBtn = document.getElementById("closeBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const statusEl = document.getElementById("status");
+    const actionButtons = [openBtn, closeBtn, restartBtn];
+
+    // ✅ 新增：解析推流地址，提取 host 和 channel
+    // 支持：
+    //   https://pentaocean.4s-system.com:18445/hdl/hlsram/live2.live.flv
+    //   https://pentaocean.4s-system.com:18446/hdl/hlsram/live4.flv
+    const FLV_CHANNEL_RE = /live(\d+)(?:\.live)?\.flv/i;
+
+    function parseStreamUrl(rawUrl) {
+      const url = String(rawUrl || "").trim();
+      if (!url) {
+        return { host: "", channel: null, reason: "empty" };
+      }
+
+      // 1) 解析通道号
+      const m = url.match(FLV_CHANNEL_RE);
+      const channel = m ? Number(m[1]) : null;
+
+      // 2) 解析主机（保留协议和端口）
+      let host = "";
+      try {
+        const u = new URL(url);
+        host = `${u.protocol}//${u.host}`;
+      } catch {
+        // 如果用户没带协议，尝试补 http://
+        try {
+          const u = new URL("http://" + url);
+          host = `${u.protocol}//${u.host}`;
+        } catch {
+          host = "";
+        }
+      }
+
+      return { host, channel, reason: m ? "ok" : "no-match" };
+    }
+
+    // ✅ 新增：输入框实时解析
+    function handleStreamUrlChange() {
+      const raw = streamUrlInput.value.trim();
+      if (!raw) {
+        parseTipEl.textContent = "";
+        parseTipEl.className = "parse-tip";
+        return;
+      }
+
+      const { host, channel } = parseStreamUrl(raw);
+
+      if (channel === null) {
+        parseTipEl.textContent = "⚠ 無法從地址解析出通道號（需包含 liveN.flv 或 liveN.live.flv）";
+        parseTipEl.className = "parse-tip error";
+        return;
+      }
+
+      // 填入通道号
+      channelInput.value = channel;
+
+      // 顺便填入主机（如果解析到了）
+      if (host) {
+        hostInput.value = host;
+      }
+
+      parseTipEl.textContent = `✓ 已解析：通道號 = ${channel}${host ? `，主機 = ${host}` : ""}`;
+      parseTipEl.className = "parse-tip ok";
+    }
+
+    streamUrlInput.addEventListener("input", handleStreamUrlChange);
+    streamUrlInput.addEventListener("change", handleStreamUrlChange);
+    streamUrlInput.addEventListener("paste", function () {
+      // 粘贴后下一帧再解析，确保 value 已更新
+      setTimeout(handleStreamUrlChange, 0);
+    });
+
+    function setStatus(msg, type) {
+      statusEl.textContent = msg;
+      statusEl.className = "status" + (type ? " " + type : "");
+    }
+
+    function setBusy(busy) {
+      actionButtons.forEach((btn) => {
+        btn.disabled = busy;
+      });
+    }
+
+    function normalizeHost(rawHost) {
+      const value = String(rawHost || "").trim();
+      if (!value) return "";
+      if (/^https?:\/\//i.test(value)) return value.replace(/\/+$/, "");
+      return `http://${value}`.replace(/\/+$/, "");
+    }
+
+    function getChannel() {
+      const channel = Number(channelInput.value);
+      if (!Number.isInteger(channel) || channel < 0) {
+        throw new Error("通道號必須是 0 或以上的整數。");
+      }
+      return channel;
+    }
+
+    function signParams(params) {
+      if (typeof md5 !== "function") {
+        throw new Error("MD5 函式庫尚未載入，請檢查網路後重新整理頁面。");
+      }
+      const payload = { ...params, t: String(Math.floor(Date.now() / 1000)) };
+      const keys = Object.keys(payload).filter((key) => key !== "token");
+      keys.push("secret");
+      keys.sort();
+      const signText = keys
+        .map((key) => (key === "secret" ? `secret=${SECRET}` : `${key}=${payload[key]}`))
+        .join("&");
+      payload.token = md5(signText);
+      return payload;
+    }
+
+    function statusLabel(code) {
+      if (code === "2") return "正常拉流";
+      if (code === "1") return "未開啟";
+      if (code === "0") return "拉流失敗";
+      return `未知(${code})`;
+    }
+
+    async function readChannelStatus(host, channel) {
+      const signed = signParams({});
+      const query = new URLSearchParams({ t: signed.t, token: signed.token });
+      const response = await fetch(`${host}/xsw/tmpStatus?${query.toString()}`);
+      const text = await response.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        return "";
+      }
+      let list = [];
+      try {
+        const parsed = JSON.parse(json.rtspstatus || "{}");
+        list = parsed.rtspstatus || [];
+      } catch {
+        list = [];
+      }
+      const code = list[channel];
+      if (code === undefined) return "";
+      return `目前狀態：${statusLabel(String(code))}`;
+    }
+
+    async function controlChannel(value) {
+      const host = normalizeHost(hostInput.value);
+      if (!host) throw new Error("請先輸入推流機 IP / 網址。");
+      const channel = getChannel();
+      const signed = signParams({
+        command: "rtsp_enable_control",
+        value,
+        channel: String(channel)
+      });
+      const query = new URLSearchParams({
+        command: signed.command,
+        value: signed.value,
+        channel: signed.channel,
+        t: signed.t,
+        token: signed.token
+      });
+      const response = await fetch(`${host}/xsw/control?${query.toString()}`, {
+        method: "POST"
+      });
+      const text = await response.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error(`設備回應不是 JSON：${text.slice(0, 200)}`);
+      }
+      if (json.code !== 0) {
+        throw new Error(json.msg || `控制失敗，錯誤碼 ${json.code}`);
+      }
+      let extra = "";
+      try {
+        extra = await readChannelStatus(host, channel);
+      } catch {
+        extra = "";
+      }
+      return { channel, extra };
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    async function handleOpen() {
+      setBusy(true);
+      try {
+        const result = await controlChannel("start");
+        setStatus(`已打開通道 ${result.channel}。${result.extra ? `\n${result.extra}` : ""}`, "ok");
+      } catch (err) {
+        setStatus(err instanceof Error ? err.message : String(err), "error");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function handleClose() {
+      setBusy(true);
+      try {
+        const result = await controlChannel("stop");
+        setStatus(`已關閉通道 ${result.channel}。${result.extra ? `\n${result.extra}` : ""}`, "ok");
+      } catch (err) {
+        setStatus(err instanceof Error ? err.message : String(err), "error");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function handleRestart() {
+      setBusy(true);
+      try {
+        const channel = getChannel();
+        await controlChannel("stop");
+        const waitSec = Math.ceil(RESTART_WAIT_MS / 1000);
+        for (let left = waitSec; left > 0; left -= 1) {
+          setStatus(`通道 ${channel} 已關閉，${left} 秒後重新開啟…`);
+          await sleep(1000);
+        }
+        const result = await controlChannel("start");
+        setStatus(`已重啟通道 ${result.channel}。${result.extra ? `\n${result.extra}` : ""}`, "ok");
+      } catch (err) {
+        setStatus(err instanceof Error ? err.message : String(err), "error");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    openBtn.addEventListener("click", handleOpen);
+    closeBtn.addEventListener("click", handleClose);
+    restartBtn.addEventListener("click", handleRestart);
+  </script>
+</body>
+</html>
