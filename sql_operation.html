@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运维 SQL 脚本工具集</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'PingFang HK', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0f23;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+    line-height: 1.6;
+}
+
+.page-header {
+    max-width: 1400px;
+    margin: 0 auto 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #1e3a5f;
+}
+
+.page-header h1 {
+    font-size: 28px;
+    color: #ffffff;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-header h1::before {
+    content: '';
+    width: 4px;
+    height: 28px;
+    background: linear-gradient(180deg, #00d2ff, #3a6ea5);
+    border-radius: 2px;
+}
+
+.page-header p {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+/* 导航标签 */
+.tabs-nav {
+    max-width: 1400px;
+    margin: 0 auto 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #0d1932;
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid #1e3a5f;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.tab-btn:hover {
+    color: #e2e8f0;
+    background: rgba(0, 210, 255, 0.05);
+}
+
+.tab-btn.active {
+    background: linear-gradient(135deg, #1e4d6b, #2a6f8f);
+    color: #ffffff;
+    border-color: #4b9bbf;
+    box-shadow: 0 2px 8px rgba(0, 210, 255, 0.2);
+}
+
+/* 内容区 */
+.content {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.sql-card {
+    background: #0d1932;
+    border: 1px solid #1e3a5f;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    display: none;
+}
+
+.sql-card.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card-header {
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #0c2140, #0d2547);
+    border-bottom: 1px solid #1e3a5f;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.card-title .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    background: rgba(0, 210, 255, 0.15);
+    border: 1px solid rgba(0, 210, 255, 0.4);
+    border-radius: 12px;
+    color: #00d2ff;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.card-desc {
+    padding: 16px 24px;
+    background: rgba(0, 210, 255, 0.03);
+    border-bottom: 1px solid #1e3a5f;
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.card-desc strong {
+    color: #00d2ff;
+    font-weight: 500;
+}
+
+.card-desc code {
+    background: rgba(0, 210, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #68d8ff;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+}
+
+/* SQL 区块 */
+.sql-block {
+    border-bottom: 1px solid #1e3a5f;
+}
+
+.sql-block:last-child {
+    border-bottom: none;
+}
+
+.sql-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px;
+    background: #0b1628;
+    border-bottom: 1px solid #1a2e4a;
+}
+
+.sql-block-title {
+    font-size: 14px;
+    color: #68d8ff;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sql-block-title::before {
+    content: '▶';
+    font-size: 10px;
+    color: #3a6ea5;
+}
+
+.copy-btn {
+    padding: 6px 14px;
+    background: rgba(0, 210, 255, 0.1);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    border-radius: 6px;
+    color: #00d2ff;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.copy-btn:hover {
+    background: rgba(0, 210, 255, 0.2);
+    border-color: #00d2ff;
+}
+
+.copy-btn.copied {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: #4caf50;
+    color: #a0ff78;
+}
+
+/* 代码显示 */
+pre {
+    margin: 0;
+    padding: 20px 24px;
+    background: #060d1a;
+    overflow-x: auto;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #cbd5e1;
+    white-space: pre;
+    tab-size: 4;
+}
+
+pre::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+pre::-webkit-scrollbar-track {
+    background: #0a1420;
+}
+
+pre::-webkit-scrollbar-thumb {
+    background: #2a4a6b;
+    border-radius: 4px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+    background: #3a6ea5;
+}
+
+/* SQL 语法高亮 */
+.sql-keyword { color: #68d8ff; font-weight: 500; }
+.sql-comment { color: #64748b; font-style: italic; }
+.sql-string { color: #a0ff78; }
+.sql-number { color: #fbbf24; }
+.sql-function { color: #c084fc; }
+.sql-operator { color: #f87171; }
+.sql-param { color: #fbbf24; }
+.sql-table { color: #fbcfe8; }
+
+/* 统计信息 */
+.stats-bar {
+    max-width: 1400px;
+    margin: 0 auto 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.stat-item {
+    background: #0d1932;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    padding: 14px 18px;
+}
+
+.stat-label {
+    color: #64748b;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    color: #00d2ff;
+    font-size: 18px;
+    font-weight: 600;
+    font-family: 'Consolas', monospace;
+}
+
+/* 提示框 */
+.tip {
+    max-width: 1400px;
+    margin: 0 auto 20px;
+    padding: 12px 18px;
+    background: rgba(251, 191, 36, 0.08);
+    border-left: 3px solid #fbbf24;
+    border-radius: 6px;
+    color: #fcd34d;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.tip strong {
+    color: #fbbf24;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    body { padding: 12px; }
+    .page-header h1 { font-size: 20px; }
+    .card-header { padding: 16px; }
+    .card-desc { padding: 12px 16px; font-size: 13px; }
+    pre { padding: 16px; font-size: 12px; }
+    .sql-block-header { padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+    <h1>运维 SQL 脚本工具集</h1>
+    <p>数据库维护、数据修补、性能诊断与备份迁移常用脚本集合</p>
+</div>
+
+<!-- 标签导航 -->
+<div class="tabs-nav">
+    <button class="tab-btn active" data-target="card1">📋 表柜补充借用记录</button>
+    <button class="tab-btn" data-target="card2">👥 补出入口数据</button>
+    <button class="tab-btn" data-target="card3">⚡ 性能诊断</button>
+    <button class="tab-btn" data-target="card4">💾 备份与迁移</button>
+</div>
+
+<div class="content">
+
+<!-- ============ 卡片1：表柜补充借用记录 ============ -->
+<div class="sql-card active" id="card1">
+    <div class="card-header">
+        <div class="card-title">
+            <span>📋 表柜补充借用记录</span>
+            <span class="badge">3 步</span>
+        </div>
+    </div>
+    <div class="card-desc">
+        <strong>用途：</strong>手动补录手表柜（Smart Cabinet）的借用记录。当员工已借出手表但系统未自动记录时，通过此脚本补全。<br>
+        <strong>执行顺序：</strong>
+        <code>①查询用户信息</code> → <code>②更新手表柜状态</code> → <code>③插入借用记录</code><br>
+        <strong>注意：</strong>执行前请确认 <code>F_UserRFIDId</code>、<code>F_DeviceSmartWatchCabinetId</code>、<code>F_CabinetCode</code> 等关键字段与实际情况一致。
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">① 查询用户信息</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 查询用户信息（按 RFID 卡号）
+SELECT * FROM TB_UserRFID WHERE F_RFID = 'HSK01015';</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">② 更新手表柜状态</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 更新手表柜状态为「使用中」，并记录借用人与借用时间
+-- F_UseStatus = 4 表示使用中
+SELECT *
+-- UPDATE T SET F_UseStatus = 4,
+--              F_UserRFIDId = '27a2b754-2bcd-4952-9f8d-a6393d662cc3',
+--              F_CounterLastUpdateTime = '2026-10-10 07:53:53',
+--              F_LoadLastUpdateTime = '2026-10-10 07:53:53'
+FROM TB_DeviceSmartWatchCabinet T
+WHERE F_DeviceSmartWatchCabinetId = '5c3a8c5e-bc1d-42e5-b2b4-7ae6826204cc';</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">③ 插入借用记录</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 补充借用记录到 TB_SmartWatchCabinetBorrowedRecord
+INSERT INTO [dbo].[TB_SmartWatchCabinetBorrowedRecord]
+(
+    [F_SmartWatchCabinetBorrowedRecordId],
+    [F_Code],
+    [F_ContractorId],
+    [F_ContractorCnName],
+    [F_ContractorEnName],
+    [F_UserRFIDId],
+    [F_UserRFIDCode],
+    [F_UserRFIDEnName],
+    [F_UserRFIDCnName],
+    [F_UserRFIDRFID],
+    [F_UserRFIDPosition],
+    [F_DeviceId],
+    [F_DeviceCode],
+    [F_DeviceName],
+    [F_DeviceCategory],
+    [F_DeviceSmartWatchCabinetId],
+    [F_CabinetCode],
+    [F_MachineId],
+    [F_LendingStatus],
+    [F_LendingTime],
+    [F_LendingDescription],
+    [F_LendingTimeLimit],
+    [F_ReturnStatus],
+    [F_ReturnTime],
+    [F_ReturnDescription],
+    [F_CreateTime],
+    [F_ModifyTime],
+    [F_IsTimeoutLeaveEmailMark],
+    [F_AuthorizedUserRFIDId],
+    [F_AuthorizedUserRFIDCode],
+    [F_AuthorizedUserRFIDEnName],
+    [F_AuthorizedUserRFIDCnName],
+    [F_AuthorizedUserRFIDRFID],
+    [F_ReturnAuthorizedUserRFIDId],
+    [F_ReturnAuthorizedUserRFIDCode],
+    [F_ReturnAuthorizedUserRFIDEnName],
+    [F_ReturnAuthorizedUserRFIDCnName],
+    [F_ReturnAuthorizedUserRFIDRFID],
+    [F_HandleUser],
+    [F_HandleDate],
+    [F_OriState],
+    [F_Remark],
+    [F_OriReturnStatus]
+)
+SELECT NEWID(),
+       '0020168',
+       'fcb60a1e-f5fe-4e1a-898d-2c00513a3f26',
+       'CWBKYH JV',
+       'CWBKYH JV',
+       '27a2b754-2bcd-4952-9f8d-a6393d662cc3',
+       '1015',
+       'Hassan Saudul',
+       '金守滿',
+       'HSK01015',
+       'Lifting Supervisor/A12S/CSCW/司機',
+       'fce9ea94-16ea-48aa-8583-f5ad48d18574',
+       'SC01',
+       'Smart Cabinet 01',
+       10,
+       '5c3a8c5e-bc1d-42e5-b2b4-7ae6826204cc',
+       '04',
+       '861265062804841',
+       1,
+       '2026-10-10 07:53:53',
+       NULL,
+       9999,
+       NULL,
+       NULL,
+       NULL,
+       '2026-10-10 07:53:53',
+       NULL,
+       NULL,             -- F_IsTimeoutLeaveEmailMark
+       NULL,             -- F_AuthorizedUserRFIDId
+       NULL,             -- F_AuthorizedUserRFIDCode
+       NULL,             -- F_AuthorizedUserRFIDEnName
+       NULL,             -- F_AuthorizedUserRFIDCnName
+       NULL,             -- F_AuthorizedUserRFIDRFID
+       NULL,             -- F_ReturnAuthorizedUserRFIDId
+       NULL,             -- F_ReturnAuthorizedUserRFIDCode
+       NULL,             -- F_ReturnAuthorizedUserRFIDEnName
+       NULL,             -- F_ReturnAuthorizedUserRFIDCnName
+       NULL,             -- F_ReturnAuthorizedUserRFIDRFID
+       N'admin',         -- F_HandleUser
+       GETDATE(),        -- F_HandleDate
+       N'1',             -- F_OriState（nchar(2)）
+       NULL,             -- F_Remark
+       NULL;             -- F_OriReturnStatus</pre>
+    </div>
+</div>
+
+<!-- ============ 卡片2：补出入口数据 ============ -->
+<div class="sql-card" id="card2">
+    <div class="card-header">
+        <div class="card-title">
+            <span>👥 SNR 地盘开工人数 - 补出入口数据</span>
+            <span class="badge">4 步</span>
+        </div>
+    </div>
+    <div class="card-desc">
+        <strong>用途：</strong>补录员工进出记录，用于看板统计当日开工人数。适用于读卡器故障或数据丢失时的补录场景。<br>
+        <strong>执行顺序：</strong>
+        <code>①统计当日开工人数</code> → <code>②查询公司 ID</code> → <code>③获取公司员工</code> → <code>④插入出入口数据</code><br>
+        <strong>注意：</strong>插入前务必先执行第①步核对人数，避免重复录入。
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">① 统计当日各判头开工人数</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 统计指定日期的开工人数（按判头分组）
+-- 结果用于核对补录前后的数据差异
+SELECT  *
+FROM    (
+    SELECT  c.F_ContractorId,
+            c.F_EnShortName AS F_ContractorEnName,
+            c.F_CnShortName AS F_ContractorCnName,
+            c.F_StandardColor,
+            c.F_LastWeekColor,
+            c.F_ThisWeekColor,
+            COUNT(t.F_UserRFIDId) AS F_NumberOfPeople
+    FROM    (
+        SELECT  CONVERT(VARCHAR(10), t.F_PairTime, 120) AS F_PairTime,
+                t.F_UserRFIDId,
+                uf.F_ContractorId
+        FROM    TB_UserRFIDInOutRecord t
+                LEFT JOIN dbo.TB_UserRFID uf ON t.F_UserRFIDId = uf.F_UserRFIDId
+        WHERE   uf.F_ContractorId IS NOT NULL
+                AND uf.F_DeleteMark = 0
+                AND t.F_PairTime >= '2026-10-15 00:00:00'
+                AND t.F_PairTime &lt;  '2026-10-15 23:59:59'
+        GROUP BY CONVERT(VARCHAR(10), t.F_PairTime, 120),
+                 t.F_UserRFIDId,
+                 uf.F_ContractorId
+    ) t
+    LEFT JOIN dbo.TB_Contractor c ON t.F_ContractorId = c.F_ContractorId
+    WHERE   c.F_IsShowDashboardMark = 1
+    GROUP BY c.F_ContractorId,
+             c.F_EnShortName,
+             c.F_CnShortName,
+             c.F_StandardColor,
+             c.F_LastWeekColor,
+             c.F_ThisWeekColor
+) t
+ORDER BY t.F_ContractorEnName, t.F_ContractorCnName;</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">② 查询公司获取公司 ID</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 常用判头公司 ID 对照：
+-- 永濠    4   Alliswell
+-- 浩隆    7
+-- 利安    10
+-- 駿逸    6
+-- 群利俊和 8
+SELECT *
+-- UPDATE T SET F_CnShortName = '永德', F_EnShortName = 'Wing Tak'
+FROM TB_Contractor t
+WHERE F_CnName IN ('alliswell', '浩隆', '利安', '駿逸', '群利-俊和聯營體');</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">③ 获取该公司下的员工</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 获取指定判头下所有有效员工（F_ContractorId 替换为上一步查到的 ID）
+SELECT *
+FROM TB_UserRFID
+WHERE F_DeleteMark = 0
+  AND F_ContractorId = '8f2e32d8-f9b0-4e00-82ee-3a4e6cc5128d';</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">④ 插入出入口数据</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 插入员工进出记录（F_UserRFIDId 替换为实际员工 ID）
+-- 使用 UNION 可一次插入多条，末尾不要加分号，最后一条后加分号
+INSERT INTO TB_UserRFIDInOutRecord
+    (F_UserRFIDInOutRecordId, F_UserRFIDId, F_State, F_HelmetRFID,
+     F_PairTime, F_InTime, F_CreateUserId, F_CreateUserName, F_CreateDate)
+SELECT NEWID(), '00694f54-60cd-4a16-9bd6-b19a9d96d92b', 1, '1',
+       GETDATE(), GETDATE(), 'System', '超級管理員', GETDATE()
+UNION
+SELECT NEWID(), '006a3212-e167-4762-ac78-9ac8349a21b2', 1, '1',
+       GETDATE(), GETDATE(), 'System', '超級管理員', GETDATE();</pre>
+    </div>
+</div>
+
+<!-- ============ 卡片3：性能诊断 ============ -->
+<div class="sql-card" id="card3">
+    <div class="card-header">
+        <div class="card-title">
+            <span>⚡ SQL Server 性能诊断</span>
+            <span class="badge">3 步</span>
+        </div>
+    </div>
+    <div class="card-desc">
+        <strong>用途：</strong>排查数据库性能问题，定位阻塞源、清理执行计划缓存、检查磁盘 IO 延迟。<br>
+        <strong>执行顺序：</strong>
+        <code>①查看活动进程</code> → <code>②定位阻塞根源</code> → <code>③检查 IO 延迟</code><br>
+        <strong>注意：</strong><code>KILL</code> 会强制中断会话，执行前请确认 SPID 无误；<code>DBCC FREEPROCCACHE</code> 会清空所有缓存执行计划，可能导致短时性能下降。
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">① 查看当前活动进程</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 查看当前正在运行、占用资源或被阻塞的进程
+SELECT
+    r.session_id       AS [会话ID],
+    r.status           AS [状态],
+    r.command          AS [命令],
+    r.cpu_time         AS [CPU时间(ms)],
+    r.total_elapsed_time AS [已耗时(ms)],
+    s.host_name        AS [客户端机器],
+    s.program_name     AS [程序名],
+    t.text             AS [正在执行的SQL语句]
+FROM sys.dm_exec_requests r
+JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+WHERE r.session_id &gt; 50 AND r.session_id &lt;&gt; @@SPID;</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">② 定位"根源阻塞者"</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 找出真正的阻塞源头（Head Blocker）
+SELECT
+    blocking_session_id AS [被阻塞的SPID],
+    session_id          AS [正在阻塞别人的SPID(根源)],
+    wait_duration_ms    AS [等待时间ms],
+    wait_type           AS [等待类型]
+FROM sys.dm_os_waiting_tasks
+WHERE blocking_session_id IS NOT NULL;
+
+-- 如确认需要中断，使用以下命令（SPID 替换为上一步查出的）
+-- KILL 75;
+-- KILL 73;
+-- KILL 51;
+-- KILL 127;
+
+-- 清空执行计划缓存（慎用）
+-- DBCC FREEPROCCACHE;</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">③ 检查磁盘 IO 延迟</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 检查数据库文件的读/写平均延迟（毫秒）
+-- 正常值：读 &lt; 10ms，写 &lt; 5ms；持续偏高说明磁盘瓶颈
+SELECT
+    vfs.database_id,
+    mf.name AS [逻辑文件名],
+    vfs.io_stall_read_ms / NULLIF(vfs.num_of_reads, 0)  AS [平均读延迟(ms)],
+    vfs.io_stall_write_ms / NULLIF(vfs.num_of_writes, 0) AS [平均写延迟(ms)]
+FROM sys.dm_io_virtual_file_stats(NULL, NULL) vfs
+JOIN sys.master_files mf
+    ON vfs.database_id = mf.database_id
+   AND vfs.file_id = mf.file_id;</pre>
+    </div>
+</div>
+
+<!-- ============ 卡片4：备份与迁移 ============ -->
+<div class="sql-card" id="card4">
+    <div class="card-header">
+        <div class="card-title">
+            <span>💾 数据库表备份与数据迁移</span>
+            <span class="badge">2 步</span>
+        </div>
+    </div>
+    <div class="card-desc">
+        <strong>用途：</strong>将 <code>LR_Base_Module</code> 表的数据替换为新表 <code>LR_Base_Module_NEW</code> 中的数据，并带事务保护与行数校验。<br>
+        <strong>执行顺序：</strong>
+        <code>①备份原表</code> → <code>②事务内清空并导入</code><br>
+        <strong>注意：</strong>第②步使用了 <code>SET XACT_ABORT ON</code>，任何错误都会自动回滚。执行前请确保 <code>LR_Base_Module_NEW</code> 表已准备好数据。
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">① 备份原表（若已备份可跳过）</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 备份 [LR_Base_Module] 表，备份表名带日期后缀
+IF OBJECT_ID(N'dbo.LR_Base_Module_Backup_20261016', N'U') IS NOT NULL
+    DROP TABLE [dbo].[LR_Base_Module_Backup_20261016];
+GO
+
+SELECT *
+INTO [dbo].[LR_Base_Module_Backup_20261016]
+FROM [dbo].[LR_Base_Module];
+GO</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">② 清空原表并导入新数据（事务保护）</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>USE [HSQ];
+GO
+
+SET XACT_ABORT ON;   -- 出错自动回滚
+
+BEGIN TRAN;
+
+-- 1. 先备份原表（如果还没备份，建议先执行一次）
+-- SELECT * INTO dbo.LR_Base_Module_Backup_20261016 FROM dbo.LR_Base_Module;
+
+-- 2. 清空原表
+DELETE FROM [dbo].[LR_Base_Module];
+
+-- 3. 把新表数据全部插回原表
+INSERT INTO [dbo].[LR_Base_Module]
+SELECT *
+FROM [dbo].[LR_Base_Module_NEW];
+
+-- 4. 验证行数是否一致
+DECLARE @oldCount INT, @newCount INT;
+SELECT @oldCount = COUNT(*) FROM [dbo].[LR_Base_Module];
+SELECT @newCount = COUNT(*) FROM [dbo].[LR_Base_Module_NEW];
+
+IF @oldCount &lt;&gt; @newCount
+BEGIN
+    PRINT '行数不一致，已回滚！';
+    ROLLBACK TRAN;
+END
+ELSE
+BEGIN
+    PRINT '行数一致，提交事务。';
+    COMMIT TRAN;
+END
+GO</pre>
+    </div>
+</div>
+
+</div>
+
+<script>
+// 标签切换
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var target = this.dataset.target;
+
+        // 切换按钮状态
+        document.querySelectorAll('.tab-btn').forEach(function(b) {
+            b.classList.remove('active');
+        });
+        this.classList.add('active');
+
+        // 切换卡片
+        document.querySelectorAll('.sql-card').forEach(function(card) {
+            card.classList.remove('active');
+        });
+        document.getElementById(target).classList.add('active');
+    });
+});
+
+// 复制代码
+function copyCode(btn) {
+    var pre = btn.closest('.sql-block').querySelector('pre');
+    var text = pre.innerText;
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function() {
+            showCopied(btn);
+        }).catch(function() {
+            fallbackCopy(text, btn);
+        });
+    } else {
+        fallbackCopy(text, btn);
+    }
+}
+
+function fallbackCopy(text, btn) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        showCopied(btn);
+    } catch (e) {
+        alert('复制失败，请手动选中代码复制');
+    }
+    document.body.removeChild(textarea);
+}
+
+function showCopied(btn) {
+    var original = btn.innerHTML;
+    btn.innerHTML = '✓ 已复制';
+    btn.classList.add('copied');
+    setTimeout(function() {
+        btn.innerHTML = original;
+        btn.classList.remove('copied');
+    }, 1500);
+}
+</script>
+
+</body>
+</html>
