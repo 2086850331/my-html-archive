@@ -30,12 +30,53 @@
         margin-bottom: 28px;
         padding-left: 19px;
     }
+
+    /* 大类分组 */
+    .category {
+        margin-bottom: 28px;
+    }
+
+    .category-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding-left: 4px;
+    }
+
+    .category-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: #2f5f77;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .category-title::before {
+        content: '';
+        width: 4px;
+        height: 18px;
+        background: #457e98;
+        border-radius: 2px;
+    }
+
+    .category-count {
+        font-size: 12px;
+        color: #457e98;
+        background: #eaf2f8;
+        padding: 1px 8px;
+        border-radius: 10px;
+        font-weight: 500;
+    }
+
     .card {
         background: #fff;
         border-radius: 10px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         overflow: hidden;
     }
+
     .item {
         display: flex;
         align-items: center;
@@ -47,6 +88,7 @@
     }
     .item:last-child { border-bottom: none; }
     .item:hover { background: #f0f7fa; }
+
     .icon {
         width: 40px;
         height: 40px;
@@ -60,13 +102,16 @@
         margin-right: 16px;
         flex-shrink: 0;
     }
+
     .info { flex: 1; min-width: 0; }
+
     .name {
         font-size: 16px;
         font-weight: 600;
         color: #2f5f77;
         margin-bottom: 2px;
     }
+
     .desc {
         font-size: 13px;
         color: #888;
@@ -74,11 +119,13 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+
     .arrow {
         color: #bbb;
         font-size: 18px;
         margin-left: 12px;
     }
+
     footer {
         text-align: center;
         font-size: 12px;
@@ -92,33 +139,85 @@
     <h1>HTML 归档导航</h1>
     <p class="subtitle">点击下方条目访问对应页面</p>
 
-    <div class="card">
-        <a class="item" href="./TB_ReaderRecords-防撞.html">
-            <div class="icon">📊</div>
-            <div class="info">
-                <div class="name">TB_ReaderRecords - 防撞</div>
-                <div class="desc">TB_ReaderRecords 相关查询与说明</div>
-            </div>
-            <div class="arrow">›</div>
-        </a>
+    <!-- ============ 大类 1：FFmpeg / 推流 ============ -->
+    <div class="category">
+        <div class="category-header">
+            <div class="category-title">🎬 FFmpeg / 推流工具</div>
+            <span class="category-count">2 项</span>
+        </div>
+        <div class="card">
+            <a class="item" href="./ffmpeg_guide.html">
+                <div class="icon">📖</div>
+                <div class="info">
+                    <div class="name">FFmpeg 使用指南</div>
+                    <div class="desc">FFmpeg 安装、推流、常用命令说明</div>
+                </div>
+                <div class="arrow">›</div>
+            </a>
 
-        <a class="item" href="./ffmpeg_guide.html">
-            <div class="icon">🎬</div>
-            <div class="info">
-                <div class="name">FFmpeg 使用指南</div>
-                <div class="desc">FFmpeg 安装、推流、常用命令说明</div>
-            </div>
-            <div class="arrow">›</div>
-        </a>
+            <a class="item" href="./restart_channel.html">
+                <div class="icon">🎛️</div>
+                <div class="info">
+                    <div class="name">推流機通道開關</div>
+                    <div class="desc">打開 / 關閉 / 重啟推流機通道，支援自動解析推流地址</div>
+                </div>
+                <div class="arrow">›</div>
+            </a>
+        </div>
+    </div>
 
-        <a class="item" href="./language.html">
-            <div class="icon">🌐</div>
-            <div class="info">
-                <div class="name">语言文件对比</div>
-                <div class="desc">zh-HK.js / en-US.js 缺失编号对比</div>
-            </div>
-            <div class="arrow">›</div>
-        </a>
+    <!-- ============ 大类 2：SQL 运维脚本 ============ -->
+    <div class="category">
+        <div class="category-header">
+            <div class="category-title">💾 SQL 运维脚本</div>
+            <span class="category-count">3 项</span>
+        </div>
+        <div class="card">
+            <a class="item" href="./TB_ReaderRecords-防撞.html">
+                <div class="icon">📊</div>
+                <div class="info">
+                    <div class="name">TB_ReaderRecords - 防撞</div>
+                    <div class="desc">TB_ReaderRecords 相关查询与说明</div>
+                </div>
+                <div class="arrow">›</div>
+            </a>
+
+            <a class="item" href="./sql_operation.html">
+                <div class="icon">🛠️</div>
+                <div class="info">
+                    <div class="name">运维 SQL 脚本工具集</div>
+                    <div class="desc">表柜补录 / 补出入口数据 / 性能诊断 / 备份迁移</div>
+                </div>
+                <div class="arrow">›</div>
+            </a>
+
+            <a class="item" href="./视图超时修复.html">
+                <div class="icon">⚡</div>
+                <div class="info">
+                    <div class="name">视图超时修复汇总</div>
+                    <div class="desc">视图优化 + 索引新增 —— GetAICameraShotMonitorData_CIC 超时修复</div>
+                </div>
+                <div class="arrow">›</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- ============ 大类 3：语言文件 ============ -->
+    <div class="category">
+        <div class="category-header">
+            <div class="category-title">🌐 语言与文档</div>
+            <span class="category-count">1 项</span>
+        </div>
+        <div class="card">
+            <a class="item" href="./language.html">
+                <div class="icon">🌐</div>
+                <div class="info">
+                    <div class="name">语言文件对比</div>
+                    <div class="desc">zh-HK.js / en-US.js 缺失编号对比</div>
+                </div>
+                <div class="arrow">›</div>
+            </a>
+        </div>
     </div>
 
     <footer>
