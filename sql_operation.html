@@ -258,16 +258,6 @@ pre::-webkit-scrollbar-thumb:hover {
     background: #3a6ea5;
 }
 
-/* SQL 语法高亮 */
-.sql-keyword { color: #68d8ff; font-weight: 500; }
-.sql-comment { color: #64748b; font-style: italic; }
-.sql-string { color: #a0ff78; }
-.sql-number { color: #fbbf24; }
-.sql-function { color: #c084fc; }
-.sql-operator { color: #f87171; }
-.sql-param { color: #fbbf24; }
-.sql-table { color: #fbcfe8; }
-
 /* 统计信息 */
 .stats-bar {
     max-width: 1400px;
@@ -335,9 +325,10 @@ pre::-webkit-scrollbar-thumb:hover {
 <!-- 标签导航 -->
 <div class="tabs-nav">
     <button class="tab-btn active" data-target="card1">📋 表柜补充借用记录</button>
-    <button class="tab-btn" data-target="card2">👥 补出入口数据</button>
+    <button class="tab-btn" data-target="card2">👥 SNR 地盘开工人数</button>
     <button class="tab-btn" data-target="card3">⚡ 性能诊断</button>
     <button class="tab-btn" data-target="card4">💾 备份与迁移</button>
+    <button class="tab-btn" data-target="card5">🧹 表清理（TB_TaskLog）</button>
 </div>
 
 <div class="content">
@@ -733,6 +724,104 @@ BEGIN
     COMMIT TRAN;
 END
 GO</pre>
+    </div>
+</div>
+
+<!-- ============ 卡片5：表清理 TB_TaskLog ============ -->
+<div class="sql-card" id="card5">
+    <div class="card-header">
+        <div class="card-title">
+            <span>🧹 清理 TB_TaskLog 表</span>
+            <span class="badge">3 步</span>
+        </div>
+    </div>
+    <div class="card-desc">
+        <strong>用途：</strong>分批安全清理 <code>TB_TaskLog</code> 表中 7 天前的日志数据，避免大表一次删除导致锁表、日志爆满等问题。<br>
+        <strong>执行顺序：</strong>
+        <code>①查近似行数</code> → <code>②建索引</code> → <code>③分批清理</code> → <code>④清理后维护</code><br>
+        <strong>注意：</strong>
+        使用 <code>sys.partitions</code> 系统视图替代 <code>COUNT(*)</code> 快速估算行数；
+        每批删除 5000 行并间隔 100ms，降低对磁盘 IO 和业务的冲击；
+        大量删除后必须重建索引（<code>ALTER INDEX ALL ... REBUILD</code>），消除碎片。
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">① 查近似行数（用系统视图替代 COUNT(*)）</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>-- 查近似行数用系统视图 替代 count(*)
+SELECT 
+    t.name AS TableName,
+    SUM(p.rows) AS ApproxRows
+FROM sys.partitions p
+JOIN sys.tables t ON p.object_id = t.object_id
+WHERE p.index_id IN (0,1)
+  AND t.name IN ('TB_TaskLog', 'TB_BaseSensor')
+GROUP BY t.name;</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">② 建 F_CreateDate 索引</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>--第一步：建 F_CreateDate 索引
+CREATE NONCLUSTERED INDEX IX_TB_TaskLog_F_CreateDate
+ON dbo.TB_TaskLog(F_CreateDate);</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">③ 执行优化后的分批清理脚本</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>--第二步：执行优化后的分批清理脚本
+SET NOCOUNT ON;
+
+DECLARE @Batch INT = 5000;
+DECLARE @Cutoff DATETIME = DATEADD(DAY, -7, GETDATE()); -- 只计算一次，避免每次循环调用 GETDATE()
+DECLARE @Deleted INT = 0;
+DECLARE @TotalDeleted INT = 0;
+
+WHILE 1 = 1
+BEGIN
+    BEGIN TRY
+        DELETE TOP (@Batch)
+        FROM dbo.TB_TaskLog
+        WHERE F_CreateDate &lt; @Cutoff;
+
+        SET @Deleted = @@ROWCOUNT;
+        SET @TotalDeleted = @TotalDeleted + @Deleted;
+
+        IF @Deleted = 0
+            BREAK;
+
+        -- 实时打印进度，方便观察
+        RAISERROR('本批删除 %d 行，累计删除 %d 行...', 0, 1, @Deleted, @TotalDeleted) WITH NOWAIT;
+
+        -- 每批之间暂停 100 毫秒，降低对磁盘 IO 和业务的冲击
+        WAITFOR DELAY '00:00:00.100';
+        
+    END TRY
+    BEGIN CATCH
+        PRINT '删除出错：' + ERROR_MESSAGE();
+        BREAK;
+    END CATCH;
+END;
+
+PRINT '清理完成，共删除 ' + CAST(@TotalDeleted AS VARCHAR(20)) + ' 行。';</pre>
+    </div>
+
+    <div class="sql-block">
+        <div class="sql-block-header">
+            <span class="sql-block-title">④ 清理后维护（必做）</span>
+            <button class="copy-btn" onclick="copyCode(this)">📋 复制</button>
+        </div>
+        <pre>--第三步：清理后维护（必做）
+--大量删除后，表和索引会产生大量碎片（特别是 GUID 主键），必须重建
+ALTER INDEX ALL ON dbo.TB_TaskLog REBUILD;
+UPDATE STATISTICS dbo.TB_TaskLog;</pre>
     </div>
 </div>
 
